@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberChecker - Plagiarism Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cyber-blue': '#00ffd5',
+                        'cyber-purple': '#f000ff',
+                        'cyber-yellow': '#fbff00',
+                        'cyber-dark': '#0f1221',
+                        'cyber-darker': '#060915',
+                        'cyber-black': '#000000',
+                    },
+                    dropShadow: {
+                        'cyber': '0 0 10px #00ffd5',
+                        'cyber-purple': '0 0 10px #f000ff',
+                    },
+                    fontFamily: {
+                        'cyber': ['Orbitron', 'sans-serif'],
+                        'cyber-body': ['Rajdhani', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f1221;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 255, 213, 0.05) 0%, transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(240, 0, 255, 0.05) 0%, transparent 25%);
+            font-family: 'Rajdhani', sans-serif;
+        }
+        
+        .loader {
+            border-top-color: #00ffd5;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .cyber-border {
+            position: relative;
+            border: 1px solid #00ffd5;
+            box-shadow: 0 0 10px rgba(0, 255, 213, 0.3);
+            overflow: hidden;
+        }
+        
+        .cyber-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffd5, transparent);
+            animation: cyber-border-animation 3s linear infinite;
+        }
+        
+        @keyframes cyber-border-animation {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .glitch {
+            position: relative;
+            animation: glitch 2s infinite;
+        }
+        
+        @keyframes glitch {
+            0% { text-shadow: -2px 0 #00ffd5; }
+            25% { text-shadow: 2px 0 #f000ff; }
+            50% { text-shadow: -2px 0 #fbff00; }
+            75% { text-shadow: 2px 0 #00ffd5; }
+            100% { text-shadow: -2px 0 #f000ff; }
+        }
+        
+        .scan-line {
+            background: linear-gradient(to bottom, transparent, rgba(0, 255, 213, 0.2), transparent);
+            position: absolute;
+            width: 100%;
+            height: 10px;
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+        
+        .cyber-glow {
+            box-shadow: 0 0 15px rgba(0, 255, 213, 0.7);
+        }
+        
+        .cyber-panel {
+            background: rgba(15, 18, 33, 0.8);
+            border: 1px solid #00ffd5;
+            box-shadow: 0 0 10px rgba(0, 255, 213, 0.3), inset 0 0 15px rgba(0, 255, 213, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        .grid-bg {
+            background-image: linear-gradient(rgba(0, 255, 213, 0.1) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(0, 255, 213, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="text-gray-200 min-h-screen grid-bg">
+    <div class="scan-line"></div>
+
+    <!-- Navbar -->
+    <nav class="bg-cyber-darker border-b border-cyber-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <i class="bi bi-shield-check text-cyber-blue text-2xl mr-2 drop-shadow-cyber"></i>
+                    <span class="text-xl font-bold text-white font-cyber tracking-wider glitch">CYBER<span class="text-cyber-blue">CHECKER</span></span>
+                </div>
+                <div class="hidden sm:flex items-center space-x-4">
+                    <div class="text-sm text-cyber-blue border border-cyber-blue px-3 py-1 rounded">
+                        <i class="bi bi-cpu mr-1"></i>
+                        <span>AI POWERED</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Upload Section -->
+        <div class="cyber-panel rounded-lg p-6 mb-8" id="uploadSection">
+            <div class="flex items-center mb-4">
+                <h2 class="text-lg font-cyber text-cyber-blue">UPLOAD ASSIGNMENTS</h2>
+                <div class="h-px bg-cyber-blue flex-grow ml-4 relative overflow-hidden">
+                    <div class="absolute h-full w-20 bg-gradient-to-r from-transparent via-cyber-blue to-transparent animate-[scan_2s_linear_infinite]"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Assignment 1 Upload -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-cyber-blue font-cyber-body">ASSIGNMENT 1</label>
+                    <div class="cyber-border bg-cyber-darker/60 rounded-lg p-4 text-center">
+                        <input type="file" id="assignment1" accept="image/*" class="hidden">
+                        <label for="assignment1" class="cursor-pointer block">
+                            <i class="bi bi-cloud-upload text-3xl text-cyber-blue mb-2"></i>
+                            <div class="bg-cyber-blue/10 backdrop-blur-sm p-2 rounded">
+                                <p class="text-sm text-cyber-blue">CLICK TO UPLOAD OR DRAG AND DROP</p>
+                                <p class="text-xs text-gray-400">JPG OR PNG FORMAT</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Assignment 2 Upload -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-cyber-blue font-cyber-body">ASSIGNMENT 2</label>
+                    <div class="cyber-border bg-cyber-darker/60 rounded-lg p-4 text-center">
+                        <input type="file" id="assignment2" accept="image/*" class="hidden">
+                        <label for="assignment2" class="cursor-pointer block">
+                            <i class="bi bi-cloud-upload text-3xl text-cyber-blue mb-2"></i>
+                            <div class="bg-cyber-blue/10 backdrop-blur-sm p-2 rounded">
+                                <p class="text-sm text-cyber-blue">CLICK TO UPLOAD OR DRAG AND DROP</p>
+                                <p class="text-xs text-gray-400">JPG OR PNG FORMAT</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="checkPlagiarism" class="mt-6 w-full md:w-auto px-8 py-3 bg-transparent border-2 border-cyber-blue text-cyber-blue rounded-md hover:bg-cyber-blue/20 focus:outline-none focus:ring-2 focus:ring-cyber-blue focus:ring-offset-2 focus:ring-offset-cyber-dark transition-all duration-300 font-cyber tracking-wider flex items-center justify-center cyber-glow">
+                <i class="bi bi-search mr-2"></i>
+                ANALYZE PLAGIARISM
+            </button>
+        </div>
+
+        <!-- Loading Section -->
+        <div id="loadingSection" class="hidden cyber-panel rounded-lg p-6 mb-8 text-center">
+            <div class="flex flex-col items-center">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-cyber-darker border-t-cyber-blue h-16 w-16 mb-6"></div>
+                
+                <h2 class="text-xl font-cyber text-cyber-blue mb-2">SCANNING DOCUMENTS</h2>
+                <div class="w-64 h-2 bg-cyber-darker rounded-full mb-4">
+                    <div class="h-full rounded-full bg-cyber-blue animate-[pulse_1.5s_ease-in-out_infinite]"></div>
+                </div>
+                
+                <p class="text-gray-300 font-cyber-body tracking-wide">ANALYZING CONTENT PATTERNS</p>
+                
+                <div class="mt-6 text-xs text-gray-500 font-mono">
+                    <div id="hackText" class="font-mono">INITIALIZING NEURAL NETWORK...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <div class="cyber-panel rounded-lg p-6 mb-8">
+                <div class="flex items-center mb-6">
+                    <h2 class="text-lg font-cyber text-cyber-blue">ANALYSIS COMPLETE</h2>
+                    <div class="h-px bg-cyber-blue flex-grow ml-4 relative overflow-hidden">
+                        <div class="absolute h-full w-20 bg-gradient-to-r from-transparent via-cyber-blue to-transparent animate-[scan_2s_linear_infinite]"></div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col md:flex-row items-center justify-between p-4 bg-cyber-darker/80 rounded-lg mb-6 cyber-border">
+                    <div class="text-center md:text-left mb-4 md:mb-0">
+                        <p class="text-sm text-gray-400 font-cyber-body">SIMILARITY INDEX</p>
+                        <div class="flex items-center">
+                            <div class="text-4xl font-bold text-cyber-blue font-cyber"><span id="similarityScore">0</span><span class="text-2xl">%</span></div>
+                            <div class="ml-4 text-xs">
+                                <div class="text-gray-400 font-cyber-body">MATCH DETECTED</div>
+                                <div id="matchTime" class="text-cyber-blue">00:00:00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="plagiarismLabel" class="px-6 py-2 rounded-md text-white font-cyber tracking-wider"></div>
+                </div>
+                
+                <!-- Score Visualization -->
+                <div class="mb-8">
+                    <div class="relative">
+                        <div class="absolute -top-3 left-0 text-xs text-gray-500">0%</div>
+                        <div class="absolute -top-3 right-0 text-xs text-gray-500">100%</div>
+                    </div>
+                    <div class="h-2 bg-cyber-darker rounded-full overflow-hidden cyber-border">
+                        <div id="scoreBar" class="h-full transition-all duration-1000 ease-in-out" style="width: 0%"></div>
+                    </div>
+                    <div class="grid grid-cols-5 gap-0.5 mt-1">
+                        <div class="h-1 bg-green-500/30 rounded-sm"></div>
+                        <div class="h-1 bg-green-400/30 rounded-sm"></div>
+                        <div class="h-1 bg-yellow-400/30 rounded-sm"></div>
+                        <div class="h-1 bg-orange-400/30 rounded-sm"></div>
+                        <div class="h-1 bg-red-500/30 rounded-sm"></div>
+                    </div>
+                </div>
+
+                <!-- Text Comparison -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <h3 class="font-cyber text-cyber-blue flex items-center">
+                            <i class="bi bi-file-text mr-2"></i>
+                            ASSIGNMENT 1
+                        </h3>
+                        <div class="p-4 bg-cyber-darker rounded-lg h-60 overflow-y-auto cyber-border">
+                            <p id="text1" class="text-sm text-gray-300 font-cyber-body"></p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h3 class="font-cyber text-cyber-blue flex items-center">
+                            <i class="bi bi-file-text mr-2"></i>
+                            ASSIGNMENT 2
+                        </h3>
+                        <div class="p-4 bg-cyber-darker rounded-lg h-60 overflow-y-auto cyber-border">
+                            <p id="text2" class="text-sm text-gray-300 font-cyber-body"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Analysis -->
+                <div class="mt-8 p-4 bg-cyber-darker/80 rounded-lg cyber-border">
+                    <h3 class="font-cyber text-cyber-blue mb-3">DETAILED ANALYSIS</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="p-3 bg-cyber-dark/70 rounded-lg text-center">
+                            <p class="text-xs text-gray-400">WORD COUNT</p>
+                            <p class="text-2xl text-cyber-blue font-cyber">124</p>
+                        </div>
+                        <div class="p-3 bg-cyber-dark/70 rounded-lg text-center">
+                            <p class="text-xs text-gray-400">MATCHED WORDS</p>
+                            <p class="text-2xl text-cyber-yellow font-cyber">37</p>
+                        </div>
+                        <div class="p-3 bg-cyber-dark/70 rounded-lg text-center">
+                            <p class="text-xs text-gray-400">PARAPHRASES</p>
+                            <p class="text-2xl text-cyber-purple font-cyber">12</p>
+                        </div>
+                        <div class="p-3 bg-cyber-dark/70 rounded-lg text-center">
+                            <p class="text-xs text-gray-400">ANALYSIS TIME</p>
+                            <p class="text-2xl text-cyber-blue font-cyber">1.2s</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button id="newCheck" class="px-6 py-2 bg-transparent border border-cyber-blue text-cyber-blue rounded-md hover:bg-cyber-blue/20 focus:outline-none transition-all duration-300 font-cyber tracking-wider">
+                        <i class="bi bi-arrow-repeat mr-2"></i>
+                        NEW CHECK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-cyber-blue/30 mt-8 py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:justify-between items-center">
+                <p class="text-center text-sm text-gray-500 mb-2 md:mb-0">
+                    © 2077 CyberChecker. Advanced AI Plagiarism Detection.
+                </p>
+                <div class="flex space-x-4 text-sm text-cyber-blue">
+                    <a href="#" class="hover:text-cyber-purple transition-colors">Legal</a>
+                    <a href="#" class="hover:text-cyber-purple transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-cyber-purple transition-colors">Terms</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Cyberpunk-style hacker text effect
+        const hackTextElement = document.getElementById('hackText');
+        const messages = [
+            "INITIALIZING NEURAL NETWORK...",
+            "IMPORTING OCR MODULE...",
+            "EXTRACTING TEXT FROM IMAGES...",
+            "ANALYZING TEXT PATTERNS...",
+            "COMPARING SEMANTIC STRUCTURES...",
+            "RUNNING SIMILARITY ALGORITHMS...",
+            "CROSS-REFERENCING DATASETS...",
+            "FINALIZING ANALYSIS REPORT..."
+        ];
+        
+        let msgIndex = 0;
+        
+        function updateHackText() {
+            hackTextElement.textContent = messages[msgIndex];
+            msgIndex = (msgIndex + 1) % messages.length;
+        }
+        
+        let hackTextInterval;
+        
+        document.getElementById('checkPlagiarism').addEventListener('click', async () => {
+            const file1 = document.getElementById('assignment1').files[0];
+            const file2 = document.getElementById('assignment2').files[0];
+
+            if (!file1 || !file2) {
+                alert('PLEASE UPLOAD BOTH ASSIGNMENTS');
+                return;
+            }
+
+            // Show loading section
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            
+            // Start the hacker text effect
+            msgIndex = 0;
+            updateHackText();
+            hackTextInterval = setInterval(updateHackText, 1200);
+
+            // Simulate API call with timeout
+            setTimeout(() => {
+                // Stop the hacker text effect
+                clearInterval(hackTextInterval);
+                
+                // Hide loading, show results
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('resultsSection').classList.remove('hidden');
+
+                // Simulate results
+                const similarityScore = Math.floor(Math.random() * 100);
+                const isPlagiarized = similarityScore > 70;
+
+                // Update timestamp
+                const now = new Date();
+                document.getElementById('matchTime').textContent = 
+                    now.getHours().toString().padStart(2, '0') + ':' + 
+                    now.getMinutes().toString().padStart(2, '0') + ':' + 
+                    now.getSeconds().toString().padStart(2, '0');
+
+                // Update UI
+                document.getElementById('similarityScore').textContent = similarityScore;
+                const label = document.getElementById('plagiarismLabel');
+                const scoreBar = document.getElementById('scoreBar');
+
+                if (isPlagiarized) {
+                    label.textContent = 'PLAGIARIZED';
+                    label.classList.add('bg-gradient-to-r', 'from-red-600', 'to-red-800', 'border', 'border-red-400');
+                    scoreBar.classList.add('bg-gradient-to-r', 'from-red-600', 'to-red-400');
+                } else {
+                    label.textContent = 'NOT PLAGIARIZED';
+                    label.classList.add('bg-gradient-to-r', 'from-green-600', 'to-green-800', 'border', 'border-green-400');
+                    scoreBar.classList.add('bg-gradient-to-r', 'from-green-600', 'to-green-400');
+                }
+
+                scoreBar.style.width = `${similarityScore}%`;
+
+                // Create cyberpunk style sample text
+                const loremA = "This assignment explores the neural interface integration with human cognitive functions, as demonstrated in the experiments conducted by Arasaka Corp in 2076. The results show a 78% increase in memory retention when using direct cortical implants, compared to traditional methods.";
+                
+                const loremB = "This assignment investigates the neural interface integration with human cognitive capabilities, based on experiments performed by Arasaka Corporation during 2076. Results indicate a 78% improvement in memory retention through the use of cortical implants compared to conventional approaches.";
+                
+                // Add some highlighted text to simulate matching
+                const processedTextA = loremA.split(' ').map(word => {
+                    if (["neural", "interface", "integration", "cognitive", "experiments", "Arasaka", "78%", "memory", "retention", "cortical", "implants"].includes(word)) {
+                        return `<span class="text-cyber-yellow">${word}</span>`;
+                    }
+                    return word;
+                }).join(' ');
+                
+                const processedTextB = loremB.split(' ').map(word => {
+                    if (["neural", "interface", "integration", "cognitive", "experiments", "Arasaka", "78%", "memory", "retention", "cortical", "implants"].includes(word)) {
+                        return `<span class="text-cyber-yellow">${word}</span>`;
+                    }
+                    return word;
+                }).join(' ');
+                
+                document.getElementById('text1').innerHTML = processedTextA;
+                document.getElementById('text2').innerHTML = processedTextB;
+            }, 5000);
+        });
+
+        // File upload preview
+        ['assignment1', 'assignment2'].forEach(id => {
+            document.getElementById(id).addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const parent = event.target.parentElement;
+                    const icon = parent.querySelector('.bi-cloud-upload');
+                    if (icon) {
+                        icon.classList.remove('bi-cloud-upload');
+                        icon.classList.add('bi-check-circle-fill');
+                        icon.style.color = '#00ffd5';
+                    }
+                    
+                    const textDiv = parent.querySelector('.bg-cyber-blue\\/10');
+                    if (textDiv) {
+                        textDiv.innerHTML = `<p class="text-sm text-cyber-blue">${file.name}</p><p class="text-xs text-gray-400">${Math.round(file.size / 1024)} KB</p>`;
+                    }
+                }
+            });
+        });
+        
+        // Reset button functionality
+        document.getElementById('newCheck').addEventListener('click', () => {
+            // Reset the form and show upload section again
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            
+            // Reset file inputs
+            document.getElementById('assignment1').value = '';
+            document.getElementById('assignment2').value = '';
+            
+            // Reset upload button icons
+            ['assignment1', 'assignment2'].forEach(id => {
+                const parent = document.getElementById(id).parentElement;
+                const icon = parent.querySelector('i');
+                if (icon) {
+                    icon.className = 'bi bi-cloud-upload text-3xl text-cyber-blue mb-2';
+                }
+                
+                const textDiv = parent.querySelector('.bg-cyber-blue\\/10');
+                if (textDiv) {
+                    textDiv.innerHTML = `<p class="text-sm text-cyber-blue">CLICK TO UPLOAD OR DRAG AND DROP</p><p class="text-xs text-gray-400">JPG OR PNG FORMAT</p>`;
+                }
+            });
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
